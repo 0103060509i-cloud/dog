@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나만의 영어 단어 암기 앱</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: #e0e0e0;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .tab-btn.active {
+            background: #3498db;
+            color: white;
+        }
+        .tab-btn:first-child {
+            border-radius: 8px 0 0 8px;
+        }
+        .tab-btn:last-child {
+            border-radius: 0 8px 8px 0;
+        }
+        .section {
+            display: none;
+        }
+        .section.active {
+            display: block;
+        }
+        /* 플래시카드 스타일 */
+        .card {
+            width: 100%;
+            height: 200px;
+            background: #fff;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            user-select: none;
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: scale(1.02);
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        button.action-btn {
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button.action-btn:hover {
+            background: #2980b9;
+        }
+        /* 퀴즈 스타일 */
+        .quiz-box {
+            margin-top: 15px;
+        }
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .option-btn {
+            padding: 12px;
+            background: #ecf0f1;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .option-btn:hover {
+            background: #bdc3c7;
+        }
+        #result-msg {
+            margin-top: 15px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>?? 영단어 20개 암기 앱</h1>
+    
+    <div class="container">
+        <!-- 상단 탭 메뉴 -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('flashcard')">1. 단어 카드</button>
+            <button class="tab-btn" onclick="switchTab('quiz')">2. 실전 퀴즈</button>
+        </div>
+
+        <!-- 단어 카드 섹션 -->
+        <div id="flashcard-section" class="section active">
+            <div id="card-counter" style="margin-bottom: 10px; color: #7f8c8d;">1 / 20</div>
+            <div class="card" id="word-card" onclick="flipCard()">
+                Loading...
+            </div>
+            <div class="controls">
+                <button class="action-btn" onclick="prevCard()">이전</button>
+                <span style="font-size: 14px; color: #95a5a6;">카드를 클릭하면 뜻을 볼 수 있어요!</span>
+                <button class="action-btn" onclick="nextCard()">다음</button>
+            </div>
+        </div>
+
+        <!-- 퀴즈 섹션 -->
+        <div id="quiz-section" class="section">
+            <div id="quiz-counter" style="margin-bottom: 10px; color: #7f8c8d;">문제 1 / 20</div>
+            <div class="quiz-box">
+                <h3 id="quiz-question" style="font-size: 22px; color: #2c3e50;">Question</h3>
+                <div class="options" id="quiz-options">
+                    <!-- 보기 버튼들이 들어갈 자리 -->
+                </div>
+                <div id="result-msg"></div>
+                <button class="action-btn" id="next-quiz-btn" style="margin-top: 20px; display: none;" onclick="nextQuiz()">다음 문제</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 기본 영어 단어 20개 데이터
+        const vocabList = [
+            { en: "Achieve", ko: "달성하다, 성취하다" },
+            { en: "Benefit", ko: "이익, 혜택" },
+            { en: "Calculate", ko: "계산하다" },
+            { en: "Determine", ko: "결정하다, 알아내다" },
+            { en: "Efficient", ko: "효율적인" },
+            { en: "Flexible", ko: "융통성 있는, 유연한" },
+            { en: "Generate", ko: "발생시키다, 만들어내다" },
+            { en: "Hesitate", ko: "망설이다, 주저하다" },
+            { en: "Identify", ko: "확인하다, 찾다" },
+            { en: "Justify", ko: "정당화하다" },
+            { en: "Knowledge", ko: "지식" },
+            { en: "Locate", ko: "~의 위치를 찾다" },
+            { en: "Maintain", ko: "유지하다" },
+            { en: "Negotiate", ko: "협상하다" },
+            { en: "Observe", ko: "관찰하다, 준수하다" },
+            { en: "Predict", ko: "예측하다" },
+            { en: "Qualify", ko: "자격을 주다[얻다]" },
+            { en: "Recognize", ko: "인식하다, 알아보다" },
+            { en: "Significant", ko: "중대한, 의미 있는" },
+            { en: "Transfer", ko: "이동하다, 전송하다" }
+        ];
+
+        let currentCardIndex = 0;
+        let isShowingKo = false;
+
+        let currentQuizIndex = 0;
+        let score = 0;
+        let quizList = [];
+
+        // 탭 전환 함수
+        function switchTab(tabName) {
+            document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            if (tabName === 'flashcard') {
+                document.getElementById('flashcard-section').classList.add('active');
+                event.target.classList.add('active');
+                renderCard();
+            } else {
+                document.getElementById('quiz-section').classList.add('active');
+                event.target.classList.add('active');
+                initQuiz();
+            }
+        }
+
+        // --- 플래시카드 로직 ---
+        function renderCard() {
+            const card = document.getElementById('word-card');
+            const counter = document.getElementById('card-counter');
+            isShowingKo = false;
+            card.textContent = vocabList[currentCardIndex].en;
+            card.style.background = "#fff";
+            card.style.color = "#2c3e50";
+            counter.textContent = `${currentCardIndex + 1} / ${vocabList.length}`;
+        }
+
+        function flipCard() {
+            const card = document.getElementById('word-card');
+            if (!isShowingKo) {
+                card.textContent = vocabList[currentCardIndex].ko;
+                card.style.background = "#3498db";
+                card.style.color = "#fff";
+                isShowingKo = true;
+            } else {
+                card.textContent = vocabList[currentCardIndex].en;
+                card.style.background = "#fff";
+                card.style.color = "#2c3e50";
+                isShowingKo = false;
+            }
+        }
+
+        function nextCard() {
+            currentCardIndex = (currentCardIndex + 1) % vocabList.length;
+            renderCard();
+        }
+
+        function prevCard() {
+            currentCardIndex = (currentCardIndex - 1 + vocabList.length) % vocabList.length;
+            renderCard();
+        }
+
+        // --- 퀴즈 로직 ---
+        function initQuiz() {
+            currentQuizIndex = 0;
+            score = 0;
+            // 퀴즈용 배열 섞기
+            quizList = [...vocabList].sort(() => Math.random() - 0.5);
+            loadQuizQuestion();
+        }
+
+        function loadQuizQuestion() {
+            document.getElementById('result-msg').textContent = "";
+            document.getElementById('next-quiz-btn').style.display = "none";
+            
+            if (currentQuizIndex >= vocabList.length) {
+                document.getElementById('quiz-question').textContent = `퀴즈 완료! ?? 총 20문제 중 ${score}문제를 맞혔어요!`;
+                document.getElementById('quiz-options').innerHTML = '';
+                document.getElementById('quiz-counter').textContent = "완료";
+                return;
+            }
+
+            document.getElementById('quiz-counter').textContent = `문제 ${currentQuizIndex + 1} / ${vocabList.length}`;
+            const currentItem = quizList[currentQuizIndex];
+            document.getElementById('quiz-question').textContent = `"${currentItem.en}"의 뜻은 무엇일까요?`;
+
+            // 오답 3개 무작위 선택
+            let options = [currentItem.ko];
+            while (options.length < 4) {
+                const randomItem = vocabList[Math.floor(Math.random() * vocabList.length)];
+                if (!options.includes(randomItem.ko)) {
+                    options.push(randomItem.ko);
+                }
+            }
+            // 보기 섞기
+            options.sort(() => Math.random() - 0.5);
+
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = '';
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = opt;
+                btn.onclick = () => checkAnswer(opt, currentItem.ko);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selected, correct) {
+            const msg = document.getElementById('result-msg');
+            const buttons = document.querySelectorAll('.option-btn');
+            
+            buttons.forEach(btn => btn.disabled = true);
+
+            if (selected === correct) {
+                msg.textContent = "정답입니다! ??";
+                msg.style.color = "#27ae60";
+                score++;
+            } else {
+                msg.textContent = `틀렸습니다! 정답은 '${correct}'입니다.`;
+                msg.style.color = "#e74c3c";
+            }
+            document.getElementById('next-quiz-btn').style.display = "inline-block";
+        }
+
+        function nextQuiz() {
+            currentQuizIndex++;
+            loadQuizQuestion();
+        }
+
+        // 초기 실행
+        renderCard();
+    </script>
+</body>
+</html>
